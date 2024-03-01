@@ -26,6 +26,7 @@ public class Scenario {
 		village.ajouterHabitant(abraracourcix);
 
 		System.out.println(village.afficherVillageois());
+
 		System.out.println(village.rechercherVendeursProduit("fleurs"));
 		System.out.println(village.installerVendeur(bonemine, "fleurs", 20));
 		System.out.println(village.rechercherVendeursProduit("fleurs"));
