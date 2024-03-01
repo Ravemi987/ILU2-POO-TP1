@@ -9,14 +9,18 @@ public class Village {
 	private Gaulois[] villageois;
 	private int nbVillageois = 0;
 	private Marche marche;
-	
+
 	private static class Marche {
 		private Etal[] etals;
-		
+
 		private Marche(int nbEtals) {
 			etals = new Etal[nbEtals];
+
+			for (int i = 0; i < nbEtals; i++) {
+				etals[i] = new Etal();
+			}
 		}
-		
+
 		void utiliserEtal(int indiceEtal, Gaulois vendeur, String produit, int nbProduit) {
 			if (0 <= indiceEtal && indiceEtal < etals.length) {
 				if (!(etals[indiceEtal].isEtalOccupe())) {
@@ -24,50 +28,57 @@ public class Village {
 				}
 			}
 		}
-		
+
 		int trouverEtatlLibre() {
 			for (int i = 0; i < etals.length; i++) {
-				if (etals[i] != null && !(etals[i].isEtalOccupe())) {
+				if (!(etals[i].isEtalOccupe())) {
 					return i;
 				}
 			}
 			return -1;
 		}
-		
+
 		Etal[] trouverEtals(String produit) {
-			Etal[] etalContenantProduit = new Etal[etals.length];
-			int indiceTab = 0;
-			for (int i = 0; i < etals.length; i++) {
-				if (etals[i] != null && etals[i].contientProduit(produit)) {
-					etalContenantProduit[indiceTab++] = etals[i];
-				}
-			}
+			int nbEtalsContenantProduit = 0;
+            for (Etal etal : etals) {
+                if (etal.isEtalOccupe() && etal.contientProduit(produit)) {
+                    nbEtalsContenantProduit++;
+                }
+            }
+
+			Etal[] etalContenantProduit = new Etal[nbEtalsContenantProduit];
+			int indiceProduit = 0;
+            for (Etal etal : etals) {
+                if (etal.isEtalOccupe() && etal.contientProduit(produit)) {
+                    etalContenantProduit[indiceProduit] = etal;
+                    indiceProduit++;
+                }
+            }
+
 			return etalContenantProduit;
 		}
-		
+
 		Etal trouverVendeur(Gaulois gaulois) {
-			for (int i = 0; i < etals.length; i++) {
-				if (etals[i] != null && (etals[i].getVendeur().getNom().equals(gaulois.getNom()))) {
-					return etals[i];
-				}
-			}
+            for (Etal etal : etals) {
+                if (etal.isEtalOccupe() && etal.getVendeur().getNom().equals(gaulois.getNom())) {
+                    return etal;
+                }
+            }
 			return null;
 		}
-		
+
 		String afficherMarche() {
 			StringBuilder chaine = new StringBuilder();
 			int nbEtalVide = 0;
-			for (int i = 0; i < etals.length; i++) {
-				if (etals[i] != null) {
-					if (etals[i].isEtalOccupe()) {
-						chaine.append("- " + etals[i].afficherEtal());
-					} else {
-						nbEtalVide++;
-					}
+            for (Etal etal : etals) {
+				if (etal.isEtalOccupe()) {
+					chaine.append(etal.afficherEtal());
+				} else {
+					nbEtalVide++;
 				}
-			}
+            }
 			if (nbEtalVide > 0) {
-				chaine.append( "Il reste" + nbEtalVide + " étals non utilisés dans le marché.\n");
+				chaine.append( "Il reste " + nbEtalVide + " étals non utilisés dans le marché.\n");
 			}
 			return chaine.toString();
 		}
@@ -76,7 +87,7 @@ public class Village {
 	public Village(String nom, int nbVillageoisMaximum, int nbEtals) {
 		this.nom = nom;
 		villageois = new Gaulois[nbVillageoisMaximum];
-		Marche marche = new Marche(nbEtals);
+		marche = new Marche(nbEtals);
 	}
 
 	public String getNom() {
@@ -121,37 +132,56 @@ public class Village {
 		}
 		return chaine.toString();
 	}
-	
+
 	public String installerVendeur(Gaulois vendeur, String produit, int nbProduit) {
-		StringBuilder chaine = new StringBuilder(vendeur.getNom() + " cherche un endroit pour vendre " + nbProduit + " " + produit + "\n");
-		marche.utiliserEtal(nbProduit, vendeur, produit, nbProduit);
-		return null;
-	}
-	
-	public String rechercherVendeursProduit(String produit) {		
-		Etal[] etalContenantProduit = marche.trouverEtals(produit);
-		if (etalContenantProduit[0] == null) {
-			return "Il n'y a pas de vendeur qui propose " + produit + " au marché."; 
-		}
-		
-		StringBuilder chaine = new StringBuilder("Les vendeurs qui proposent" + produit + "sont :\n");
-		for (int i = 0; i < etalContenantProduit.length; i++) {
-			if (etalContenantProduit[i] != null)
-			chaine.append("- " + etalContenantProduit[i].getVendeur().getNom());
-		}
-		
+		StringBuilder chaine = new StringBuilder(vendeur.getNom() + " cherche un endroit pour vendre " + nbProduit + " " + produit + ".\n");
+		int indiceEtal = marche.trouverEtatlLibre();
+		marche.utiliserEtal(indiceEtal, vendeur, produit, nbProduit);
+		chaine.append("Le vendeur " + vendeur.getNom() + " vend des " + produit + " à l'étal n°" + (indiceEtal+1) +".\n");
+
 		return chaine.toString();
 	}
-	
+
+	public String rechercherVendeursProduit(String produit) {
+		StringBuilder chaine = new StringBuilder();
+		Etal[] etalProduit = marche.trouverEtals(produit);
+		switch (etalProduit.length) {
+			case 0:
+				chaine.append("Il n'y a pas de vendeur qui proposent des " + produit + " au marché.\n");
+				break;
+			case 1:
+				chaine.append("Seul le vendeur " + etalProduit[0].getVendeur().getNom() + " vend des " + produit + " au marché.\n");
+				break;
+			default:
+				chaine.append("Les vendeurs qui proposent des " + produit + " sont :\n");
+                for (Etal etal : etalProduit) {
+                    chaine.append("- " + etal.getVendeur().getNom() + "\n");
+                }
+				break;
+		}
+		return chaine.toString();
+	}
+
 	public Etal rechercherEtal(Gaulois vendeur) {
-		return null;
+		return marche.trouverVendeur(vendeur);
 	}
-	
+
 	public String partirVendeur(Gaulois vendeur) {
-		return null;
+		return rechercherEtal(vendeur).libererEtal();
+
 	}
-	
-	public String afficherMarch() {
-		return null;
+
+	public String afficherMarche() {
+		StringBuilder chaine1 = new StringBuilder("Le marche du village " + "\"" + nom + "\" ");
+		StringBuilder chaine2 = new StringBuilder(marche.afficherMarche());
+		if (marche.etals[1].isEtalOccupe()) {
+			return chaine1.append("possède plusieurs étales :\n").append(chaine2).toString();
+		} else  {
+			if (marche.etals[0].isEtalOccupe()) {
+				return chaine1.append("possède une étale :\n").append(chaine2).toString();
+			} else {
+				return chaine1.append("ne possède pas d'étale :\n").append(chaine2).toString();
+			}
+		}
 	}
 }
